@@ -12,71 +12,43 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type DogResponse struct {
-	Message string `json:"message"`
-	Status  string `json:"status"`
-}
-
-type DogResponseMulti struct {
+type BreedListResponse struct {
 	Message []string `json:"message"`
 	Status  string   `json:"status"`
 }
 
 func main() {
-
-	var image int
-
 	var rootCmd = &cobra.Command{
 		Use: "dog-cli",
 	}
 
-	var randomCmd = &cobra.Command{
-		Use:   "random",
-		Short: "ランダムな犬画像を取得",
+	var breedListCmd = &cobra.Command{
+		Use:   "breed-list",
+		Short: "犬種一覧を取得",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			var url string
-
-			if image <= 1 {
-				url = "https://dog.ceo/api/breeds/image/random"
-			} else {
-				url = fmt.Sprintf("https://dog.ceo/api/breeds/image/random/%d", image)
-			}
-
-			resp, err := http.Get(url)
+			resp, err := http.Get("https://dog.ceo/api/breeds/list")
 			if err != nil {
 				fmt.Println(err)
-				return
+				os.Exit(1)
 			}
 			defer resp.Body.Close()
 
-			if image <= 1 {
-				var dog DogResponse
-				if err := json.NewDecoder(resp.Body).Decode(&dog); err != nil {
-					fmt.Println(err)
-					return
-				}
-				fmt.Println(dog.Message)
-			} else {
-				var dogs DogResponseMulti
-				if err := json.NewDecoder(resp.Body).Decode(&dogs); err != nil {
-					fmt.Println(err)
-					return
-				}
-				for _, img := range dogs.Message {
-					fmt.Println(img)
-				}
+			var result BreedListResponse
+			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			for _, breed := range result.Message {
+				fmt.Println(breed)
 			}
 		},
 	}
 
-	// 🔥 ここを images に変更
-	randomCmd.Flags().IntVarP(&image, "images", "i", 1, "取得する画像の件数")
-
-	rootCmd.AddCommand(randomCmd)
+	rootCmd.AddCommand(breedListCmd)
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
